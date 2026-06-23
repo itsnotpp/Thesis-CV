@@ -10,7 +10,7 @@ const sarabun = Sarabun({
 });
 
 export const metadata: Metadata = {
-  title: "Educational Expert Network Platform (EENP)",
+  title: "EENP",
   description: "เครือข่ายผู้เชี่ยวชาญทางการศึกษาแห่งชาติ แพลตฟอร์มสำหรับบุคลากรทางการศึกษา",
 };
 

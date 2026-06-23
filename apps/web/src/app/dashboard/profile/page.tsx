@@ -12,6 +12,11 @@ export default function ProfilePage() {
     experience: true,
     publications: true
   })
+  const [contactExportOptions, setContactExportOptions] = useState({
+    email: true,
+    phone: true,
+    location: true
+  })
   const [contactInfo, setContactInfo] = useState({
     email: "somchai.r@g.swu.ac.th",
     phone: "02-123-4567",
@@ -56,12 +61,16 @@ export default function ProfilePage() {
     
     const params = new URLSearchParams()
     params.set("sections", sections)
-    params.set("email", contactInfo.email)
-    params.set("phone", contactInfo.phone)
-    params.set("location", contactInfo.location)
+    if (contactExportOptions.email) params.set("email", contactInfo.email)
+    else params.set("email", "")
 
-    window.open(`/dashboard/profile/cv?${params.toString()}`, "_blank")
-    setShowExportModal(false)
+    if (contactExportOptions.phone) params.set("phone", contactInfo.phone)
+    else params.set("phone", "")
+
+    if (contactExportOptions.location) params.set("location", contactInfo.location)
+    else params.set("location", "")
+
+    window.location.href = `/dashboard/profile/cv?${params.toString()}`
   }
 
   return (
@@ -78,7 +87,7 @@ export default function ProfilePage() {
               </button>
             </div>
             
-            <div className="space-y-4 mb-8">
+            <div className="space-y-4 mb-6">
               {[
                 { id: 'personal', label: 'ข้อมูลส่วนตัวและประวัติย่อ (Bio)' },
                 { id: 'education', label: 'ประวัติการศึกษา' },
@@ -93,6 +102,25 @@ export default function ProfilePage() {
                     className="w-5 h-5 rounded text-primary focus:ring-primary/50"
                   />
                   <span className="font-medium text-slate-700 dark:text-slate-300">{section.label}</span>
+                </label>
+              ))}
+            </div>
+
+            <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-3">ช่องทางการติดต่อ</h4>
+            <div className="space-y-3 mb-8 pl-4 border-l-2 border-primary/20 dark:border-primary/20">
+              {[
+                { id: 'email', label: 'อีเมล (Email)' },
+                { id: 'phone', label: 'เบอร์โทรศัพท์ (Phone)' },
+                { id: 'location', label: 'พิกัด (Location)' }
+              ].map(opt => (
+                <label key={opt.id} className="flex items-center space-x-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={contactExportOptions[opt.id as keyof typeof contactExportOptions]}
+                    onChange={(e) => setContactExportOptions(prev => ({...prev, [opt.id]: e.target.checked}))}
+                    className="w-4 h-4 rounded text-primary focus:ring-primary/50"
+                  />
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">{opt.label}</span>
                 </label>
               ))}
             </div>
