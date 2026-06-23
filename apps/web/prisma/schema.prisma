@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String?
+  role          String         @default("USER") // USER, EXPERT, ADMIN
+  isVerified    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  profile       Profile?
+  settings      Settings?
+}
+
+model Profile {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  
+  // Personal Info
+  prefix        String?
+  firstName     String?
+  lastName      String?
+  academicTitle String?
+  jobTitle      String?
+  organization  String?
+  bio           String?
+  avatarUrl     String?
+  coverUrl      String?
+  keywords      String?
+
+  // Contact Info
+  email         String?
+  phone         String?
+  location      String?
+
+  updatedAt     DateTime @updatedAt
+}
+
+model Settings {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  
+  publicProfile   Boolean  @default(true)
+  hideContactInfo Boolean  @default(false)
+  darkMode        Boolean  @default(false)
+  language        String   @default("th")
+  emailAlerts     Boolean  @default(true)
+  aiMatchAlerts   Boolean  @default(true)
+
+  updatedAt       DateTime @updatedAt
+}

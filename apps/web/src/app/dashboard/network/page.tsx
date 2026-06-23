@@ -60,7 +60,7 @@ export default function NetworkPage() {
           const randExp = mockExpertsData[Math.floor(Math.random() * mockExpertsData.length)]
           results[randExp.id] = {
             score: 70 + Math.floor(Math.random() * 15),
-            reason: "ถึงแม้จะไม่ตรงคีย์เวิร์ดโดยตรง แต่ AI พบความเชื่อมโยงในสาขาวิชาใกล้เคียงที่อาจเป็นประโยชน์ต่องานวิจัยของคุณ"
+            reason: "AI วิเคราะห์พบความเชี่ยวชาญแบบข้ามสายงาน (Cross-disciplinary) ที่สามารถนำมาประยุกต์ใช้เพื่อยกระดับงานวิจัยของคุณให้สมบูรณ์แบบยิ่งขึ้น"
           }
         }
       }

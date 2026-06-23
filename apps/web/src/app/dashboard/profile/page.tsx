@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Save, User, Briefcase, GraduationCap, Link as LinkIcon, Plus, FileDown, X, Loader2, CheckCircle2 } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("personal")
@@ -28,10 +29,45 @@ export default function ProfilePage() {
     lastName: "เรียนดี",
     jobTitle: "อาจารย์ประจำ",
     organization: "มหาวิทยาลัยศรีนครินทรวิโรฒ",
-    bio: "มีความสนใจในด้านเทคโนโลยีการศึกษาและการนำ AI มาใช้ในการเรียนการสอน"
+    bio: "มีความสนใจในด้านเทคโนโลยีการศึกษาและการนำ AI มาใช้ในการเรียนการสอน",
+    avatarUrl: "",
+    keywords: ""
   })
   const [isSaving, setIsSaving] = useState(false)
   const [showSaveSuccess, setShowSaveSuccess] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 500 * 1024) {
+      alert("ไฟล์รูปภาพต้องมีขนาดไม่เกิน 500KB ครับ")
+      return
+    }
+
+    setIsUploading(true)
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Math.random()}.${fileExt}`
+    const filePath = `user-avatar-${fileName}`
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath)
+      setPersonalInfo(prev => ({...prev, avatarUrl: publicUrl}))
+    } catch (error) {
+      console.error("Upload error:", error)
+      alert("อัปโหลดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -193,13 +229,28 @@ export default function ProfilePage() {
                   <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">ข้อมูลส่วนตัว</h2>
                   <div className="flex items-center gap-6 mb-8">
                     <div className="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-800 border-4 border-white dark:border-slate-900 shadow-lg flex items-center justify-center overflow-hidden">
-                      <User size={40} className="text-slate-400" />
+                      {personalInfo.avatarUrl ? (
+                        <img src={personalInfo.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={40} className="text-slate-400" />
+                      )}
                     </div>
                     <div>
-                      <button className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg font-medium shadow-sm transition-colors text-sm">
-                        เปลี่ยนรูปโปรไฟล์
+                      <input 
+                        type="file" 
+                        accept="image/jpeg, image/png" 
+                        className="hidden" 
+                        ref={fileInputRef} 
+                        onChange={handleFileUpload} 
+                      />
+                      <button 
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-4 py-2 rounded-lg font-medium shadow-sm transition-colors text-sm disabled:opacity-50"
+                      >
+                        {isUploading ? "กำลังอัปโหลด..." : "เปลี่ยนรูปโปรไฟล์"}
                       </button>
-                      <p className="text-xs text-slate-500 mt-2">รองรับ JPG, PNG สูงสุด 5MB</p>
+                      <p className="text-xs text-slate-500 mt-2">รองรับ JPG, PNG สูงสุด 500KB</p>
                     </div>
                   </div>
                 </div>
@@ -259,6 +310,17 @@ export default function ProfilePage() {
                       type="text" 
                       value={personalInfo.organization}
                       onChange={(e) => setPersonalInfo({...personalInfo, organization: e.target.value})}
+                      className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" 
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">คีย์เวิร์ดความเชี่ยวชาญ (Keywords)</label>
+                    <input 
+                      type="text" 
+                      placeholder="เช่น AI, Data Science, การประเมินผล (คั่นด้วยลูกน้ำ)"
+                      value={personalInfo.keywords}
+                      onChange={(e) => setPersonalInfo({...personalInfo, keywords: e.target.value})}
                       className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" 
                     />
                   </div>
