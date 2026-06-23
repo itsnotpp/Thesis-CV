@@ -18,9 +18,9 @@ function CVContent() {
   const showExperience = sections.includes("experience")
   const showPublications = sections.includes("publications")
 
-  const email = searchParams.get("email") || session?.user?.email || "somchai.r@g.swu.ac.th"
-  const phone = searchParams.get("phone") || "02-123-4567"
-  const location = searchParams.get("location") || "กรุงเทพมหานคร, ประเทศไทย"
+  const email = searchParams.has("email") ? searchParams.get("email") : (session?.user?.email || "somchai.r@g.swu.ac.th")
+  const phone = searchParams.has("phone") ? searchParams.get("phone") : "02-123-4567"
+  const location = searchParams.has("location") ? searchParams.get("location") : "กรุงเทพมหานคร, ประเทศไทย"
 
   const handlePrint = () => {
     window.print()
@@ -70,9 +70,9 @@ function CVContent() {
             <p className="text-base text-slate-500 mt-1">มหาวิทยาลัยศรีนครินทรวิโรฒ</p>
           </div>
           <div className="text-right text-sm space-y-1 text-slate-600 mt-2">
-            <p>{email}</p>
-            <p>{phone}</p>
-            <p>{location}</p>
+            {email && <p>{email}</p>}
+            {phone && <p>{phone}</p>}
+            {location && <p>{location}</p>}
           </div>
         </div>
 
