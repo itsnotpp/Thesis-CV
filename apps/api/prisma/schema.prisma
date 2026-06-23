@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String?
+  role          String         @default("USER") // USER, EXPERT, ADMIN
+  isVerified    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  profiles      Profile[]
+  expertiseTags ExpertiseTag[]
+  publications  Publication[]
+  portfolios    Portfolio[]
+}
+
+model Profile {
+  id            String         @id @default(uuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id])
+  prefix        String?
+  firstName     String
+  lastName      String
+  academicTitle String?
+  jobTitle      String?
+  organization  String?
+  bio           String?
+  avatarUrl     String?
+  coverUrl      String?
+
+  educations    Education[]
+  experiences   Experience[]
+}
+
+model ExpertiseTag {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  tagName         String
+  endorsementCount Int     @default(0)
+}
+
+model Education {
+  id           String   @id @default(uuid())
+  profileId    String
+  profile      Profile  @relation(fields: [profileId], references: [id])
+  degree       String
+  fieldOfStudy String
+  institution  String
+  yearOfGrad   Int?
+  thesisTitle  String?
+}
+
+model Experience {
+  id           String   @id @default(uuid())
+  profileId    String
+  profile      Profile  @relation(fields: [profileId], references: [id])
+  jobTitle     String
+  organization String
+  startDate    DateTime?
+  endDate      DateTime?
+}
+
+model Publication {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  type         String   // JOURNAL, CONFERENCE, BOOK
+  title        String
+  publisher    String?
+  publishDate  DateTime?
+  doi          String?
+  isScopus     Boolean  @default(false)
+  isTci        Boolean  @default(false)
+}
+
+model Portfolio {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  title        String
+  description  String?
+  fileUrl      String?
+  type         String   // RESEARCH, INNOVATION, TEACHING
+}
+
