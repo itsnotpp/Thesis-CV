@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Save, User, Briefcase, GraduationCap, Link as LinkIcon, Plus, FileDown, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Save, User, Briefcase, GraduationCap, Link as LinkIcon, Plus, FileDown, X, Loader2, CheckCircle2 } from "lucide-react"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("personal")
@@ -17,6 +17,36 @@ export default function ProfilePage() {
     phone: "02-123-4567",
     location: "กรุงเทพมหานคร, ประเทศไทย"
   })
+  const [personalInfo, setPersonalInfo] = useState({
+    prefix: "นาย",
+    firstName: "สมชาย",
+    lastName: "เรียนดี",
+    jobTitle: "อาจารย์ประจำ",
+    organization: "มหาวิทยาลัยศรีนครินทรวิโรฒ",
+    bio: "มีความสนใจในด้านเทคโนโลยีการศึกษาและการนำ AI มาใช้ในการเรียนการสอน"
+  })
+  const [isSaving, setIsSaving] = useState(false)
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false)
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const savedPersonal = localStorage.getItem("profile_personal")
+    if (savedPersonal) setPersonalInfo(JSON.parse(savedPersonal))
+    
+    const savedContact = localStorage.getItem("profile_contact")
+    if (savedContact) setContactInfo(JSON.parse(savedContact))
+  }, [])
+
+  const handleSave = () => {
+    setIsSaving(true)
+    setTimeout(() => {
+      localStorage.setItem("profile_personal", JSON.stringify(personalInfo))
+      localStorage.setItem("profile_contact", JSON.stringify(contactInfo))
+      setIsSaving(false)
+      setShowSaveSuccess(true)
+      setTimeout(() => setShowSaveSuccess(false), 3000)
+    }, 800)
+  }
 
   const handleExport = () => {
     const sections = Object.entries(exportSections)
@@ -89,9 +119,13 @@ export default function ProfilePage() {
             <FileDown size={18} />
             <span>Export เป็น CV (PDF)</span>
           </button>
-          <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
-            <Save size={18} />
-            <span>บันทึกข้อมูล</span>
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg shadow-primary/20 transition-all flex items-center gap-2 disabled:opacity-70"
+          >
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : (showSaveSuccess ? <CheckCircle2 size={18} /> : <Save size={18} />)}
+            <span>{isSaving ? "กำลังบันทึก..." : (showSaveSuccess ? "บันทึกสำเร็จ!" : "บันทึกข้อมูล")}</span>
           </button>
         </div>
       </div>
@@ -145,7 +179,11 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">คำนำหน้าชื่อ</label>
-                    <select className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white">
+                    <select 
+                      value={personalInfo.prefix}
+                      onChange={(e) => setPersonalInfo({...personalInfo, prefix: e.target.value})}
+                      className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white"
+                    >
                       <option>นาย</option>
                       <option>นาง</option>
                       <option>นางสาว</option>
@@ -159,22 +197,42 @@ export default function ProfilePage() {
 
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">ชื่อจริง</label>
-                    <input type="text" defaultValue="สมชาย" className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" />
+                    <input 
+                      type="text" 
+                      value={personalInfo.firstName}
+                      onChange={(e) => setPersonalInfo({...personalInfo, firstName: e.target.value})}
+                      className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" 
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">นามสกุล</label>
-                    <input type="text" defaultValue="เรียนดี" className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" />
+                    <input 
+                      type="text" 
+                      value={personalInfo.lastName}
+                      onChange={(e) => setPersonalInfo({...personalInfo, lastName: e.target.value})}
+                      className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" 
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">ตำแหน่งงานปัจจุบัน</label>
-                    <input type="text" defaultValue="อาจารย์ประจำ" className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" />
+                    <input 
+                      type="text" 
+                      value={personalInfo.jobTitle}
+                      onChange={(e) => setPersonalInfo({...personalInfo, jobTitle: e.target.value})}
+                      className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" 
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">หน่วยงาน / สถาบัน</label>
-                    <input type="text" defaultValue="มหาวิทยาลัยศรีนครินทรวิโรฒ" className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" />
+                    <input 
+                      type="text" 
+                      value={personalInfo.organization}
+                      onChange={(e) => setPersonalInfo({...personalInfo, organization: e.target.value})}
+                      className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white" 
+                    />
                   </div>
 
                   <div className="md:col-span-2 space-y-2 relative">
@@ -185,7 +243,12 @@ export default function ProfilePage() {
                         ให้ AI ช่วยเขียน
                       </button>
                     </div>
-                    <textarea rows={4} className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white resize-none" defaultValue="มีความสนใจในด้านเทคโนโลยีการศึกษาและการนำ AI มาใช้ในการเรียนการสอน"></textarea>
+                    <textarea 
+                      rows={4} 
+                      value={personalInfo.bio}
+                      onChange={(e) => setPersonalInfo({...personalInfo, bio: e.target.value})}
+                      className="w-full px-4 py-3 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white resize-none"
+                    ></textarea>
                   </div>
                 </div>
               </div>

@@ -52,12 +52,12 @@ export default function DashboardLayout({
             const isActive = pathname === item.href
             return (
               <Link key={item.name} href={item.href}>
-                <div className={`flex items-center px-4 py-3 rounded-xl transition-all ${
+                <div className={`flex items-center ${isSidebarOpen ? 'px-4 justify-start' : 'px-0 justify-center'} py-3 rounded-xl transition-all ${
                   isActive 
                   ? "bg-primary text-white shadow-md shadow-primary/20" 
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}>
-                  <item.icon size={20} className={isActive ? "text-white" : ""} />
+                  <item.icon size={isSidebarOpen ? 20 : 24} className={isActive ? "text-white" : ""} />
                   {isSidebarOpen && <span className="ml-3 font-medium">{item.name}</span>}
                 </div>
               </Link>
@@ -66,8 +66,8 @@ export default function DashboardLayout({
         </div>
 
         <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-          <div className="flex items-center px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 cursor-pointer transition-colors">
-            <LogOut size={20} />
+          <div className={`flex items-center ${isSidebarOpen ? 'px-4 justify-start' : 'px-0 justify-center'} py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 cursor-pointer transition-colors`}>
+            <LogOut size={isSidebarOpen ? 20 : 24} />
             {isSidebarOpen && <span className="ml-3 font-medium">ออกจากระบบ</span>}
           </div>
         </div>
