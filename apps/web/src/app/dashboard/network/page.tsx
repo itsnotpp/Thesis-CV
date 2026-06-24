@@ -2,17 +2,15 @@
 
 import { useState, useEffect } from "react"
 import { Search, Building, GraduationCap, ChevronDown, CheckCircle2, Sparkles, Loader2, BrainCircuit, UserPlus, BookPlus, UserCheck, X } from "lucide-react"
+import Link from "next/link"
 import { getNetworkData, connectUser, addJointPublication } from "@/app/actions/network"
 
 export default function NetworkPage() {
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedExpert, setSelectedExpert] = useState<any>(null)
   const [experts, setExperts] = useState<any[]>([])
   const [connections, setConnections] = useState<any[]>([])
   const [currentUserId, setCurrentUserId] = useState("")
   const [isLoading, setIsLoading] = useState(true)
-  const [pubTitle, setPubTitle] = useState("")
-  const [isConnecting, setIsConnecting] = useState(false)
   
   // AI States
   const [isAiLoading, setIsAiLoading] = useState(false)
@@ -40,34 +38,6 @@ export default function NetworkPage() {
       (c.userId === expertId && c.connectedId === currentUserId)
     )
     return conn ? conn.status : "NONE"
-  }
-
-  const handleConnect = async (expertId: string) => {
-    setIsConnecting(true)
-    try {
-      await connectUser(expertId)
-      // refresh data
-      const data = await getNetworkData()
-      setConnections(data.connections)
-    } catch (err) {
-      alert("เชื่อมต่อล้มเหลว")
-    } finally {
-      setIsConnecting(false)
-    }
-  }
-
-  const handleAddJointPub = async (expertId: string) => {
-    if (!pubTitle.trim()) {
-      alert("กรุณากรอกชื่อผลงาน")
-      return
-    }
-    try {
-      await addJointPublication(expertId, pubTitle)
-      alert("เพิ่มผลงานวิชาการร่วมกันสำเร็จ! (ตรวจสอบได้ที่หน้าโปรไฟล์ของคุณ)")
-      setPubTitle("")
-    } catch (err) {
-      alert("เพิ่มผลงานล้มเหลว")
-    }
   }
 
   const handleAiSearch = () => {
@@ -131,79 +101,6 @@ export default function NetworkPage() {
   return (
     <div className="space-y-6 pb-10 relative">
       
-      {/* Profile Modal */}
-      {selectedExpert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
-            
-            <div className="h-32 bg-gradient-to-r from-primary/80 to-violet-500 relative">
-              <button onClick={() => setSelectedExpert(null)} className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors">
-                <X size={24} />
-              </button>
-            </div>
-            
-            <div className="px-8 pb-8 flex-1 overflow-y-auto">
-              <div className="flex justify-between items-end -mt-12 mb-6">
-                <div className="w-24 h-24 rounded-full bg-white dark:bg-slate-900 border-4 border-white dark:border-slate-900 flex items-center justify-center shadow-md overflow-hidden relative">
-                  <div className="w-full h-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-3xl font-bold text-slate-500">
-                    {(selectedExpert.profile?.firstName?.charAt(0)) || "ผ"}
-                  </div>
-                </div>
-                
-                {getConnectionStatus(selectedExpert.id) === "NONE" ? (
-                  <button onClick={() => handleConnect(selectedExpert.id)} disabled={isConnecting} className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl font-semibold shadow-lg transition-all flex gap-2 items-center">
-                    {isConnecting ? <Loader2 className="animate-spin" size={18} /> : <UserPlus size={18} />} Connect
-                  </button>
-                ) : (
-                  <div className="bg-emerald-100 text-emerald-700 px-6 py-2.5 rounded-xl font-semibold flex items-center gap-2">
-                    <UserCheck size={18} /> เป็นเพื่อนแล้ว
-                  </div>
-                )}
-              </div>
-
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{selectedExpert.profile?.firstName} {selectedExpert.profile?.lastName}</h2>
-                <p className="text-lg text-slate-600 dark:text-slate-300 mt-1">{selectedExpert.profile?.jobTitle} • {selectedExpert.profile?.organization}</p>
-              </div>
-
-              {getConnectionStatus(selectedExpert.id) === "ACCEPTED" && (
-                <div className="mb-6 p-4 bg-primary/5 rounded-2xl border border-primary/20">
-                  <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-3">
-                    <BookPlus size={18} className="text-primary" /> เพิ่มผลงานวิชาการร่วมกัน
-                  </h3>
-                  <div className="flex gap-2">
-                    <input 
-                      type="text" 
-                      value={pubTitle}
-                      onChange={e => setPubTitle(e.target.value)}
-                      placeholder="ระบุชื่อผลงานวิชาการร่วม..." 
-                      className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800"
-                    />
-                    <button onClick={() => handleAddJointPub(selectedExpert.id)} className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2 rounded-xl font-medium">บันทึก</button>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">เกี่ยวกับ (About)</h3>
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm">
-                    {selectedExpert.profile?.bio || "-"}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-3">ความเชี่ยวชาญเฉพาะด้าน</h3>
-                  <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-sm">
-                    {selectedExpert.profile?.keywords || "-"}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-          </div>
-        </div>
-      )}
-
       {/* Main Page Layout */}
       <div>
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">ค้นหาผู้ร่วมวิจัยด้วย AI</h1>
@@ -240,8 +137,12 @@ export default function NetworkPage() {
             <div key={expert.id} className="glass border border-slate-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col sm:flex-row gap-6 hover:shadow-xl transition-all">
               <div className="flex-1">
                 <div className="flex justify-between items-start mb-4">
-                  <div className="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-xl">
-                    {expert.profile?.firstName?.charAt(0) || "อ"}
+                  <div className="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-xl overflow-hidden">
+                    {expert.profile?.avatarUrl ? (
+                      <img src={expert.profile?.avatarUrl} className="w-full h-full object-cover" alt="avatar" />
+                    ) : (
+                      expert.profile?.firstName?.charAt(0) || "อ"
+                    )}
                   </div>
                   {isConnected && <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">เป็นเพื่อนแล้ว</span>}
                 </div>
@@ -260,9 +161,9 @@ export default function NetworkPage() {
               )}
 
               <div className="flex flex-col justify-end">
-                <button onClick={() => setSelectedExpert(expert)} className="text-primary font-bold text-sm bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-xl transition-colors">
+                <Link href={`/profile/${expert.id}`} className="text-primary font-bold text-sm bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-xl transition-colors text-center inline-block">
                   ดูโปรไฟล์
-                </button>
+                </Link>
               </div>
             </div>
           )
