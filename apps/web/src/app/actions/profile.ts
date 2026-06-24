@@ -12,7 +12,7 @@ export async function getProfile() {
 
   let user = await prisma.user.findUnique({
     where: { email },
-    include: { profile: true }
+    include: { profile: true, publications: true }
   })
 
   // Mock user creation for testing if not exists
@@ -30,11 +30,11 @@ export async function getProfile() {
           }
         }
       },
-      include: { profile: true }
+      include: { profile: true, publications: true }
     })
   }
 
-  return user?.profile
+  return { profile: user?.profile, publications: user?.publications }
 }
 
 export async function saveProfile(data: any) {

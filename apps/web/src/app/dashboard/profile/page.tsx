@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Save, User, Briefcase, GraduationCap, Link as LinkIcon, Plus, FileDown, X, Loader2, CheckCircle2 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
+import { Save, User, Briefcase, GraduationCap, Link as LinkIcon, Plus, FileDown, X, Loader2, CheckCircle2, BookOpen, Search, Filter, FileText } from "lucide-react"
+import { getProfile, saveProfile } from "@/app/actions/profile"
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("personal")
@@ -33,9 +33,12 @@ export default function ProfilePage() {
     avatarUrl: "",
     keywords: ""
   })
+  const [publications, setPublications] = useState<any[]>([])
+
   const [isSaving, setIsSaving] = useState(false)
   const [showSaveSuccess, setShowSaveSuccess] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,19 +51,21 @@ export default function ProfilePage() {
     }
 
     setIsUploading(true)
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Math.random()}.${fileExt}`
-    const filePath = `user-avatar-${fileName}`
+    const formData = new FormData()
+    formData.append('file', file)
 
     try {
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file)
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
 
-      if (uploadError) throw uploadError
+      if (!response.ok) {
+        throw new Error("Upload failed")
+      }
 
-      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath)
-      setPersonalInfo(prev => ({...prev, avatarUrl: publicUrl}))
+      const data = await response.json()
+      setPersonalInfo(prev => ({...prev, avatarUrl: data.publicUrl}))
     } catch (error) {
       console.error("Upload error:", error)
       alert("อัปโหลดไม่สำเร็จ กรุณาลองใหม่อีกครั้ง")
@@ -69,24 +74,55 @@ export default function ProfilePage() {
     }
   }
 
-  // Load from localStorage on mount
+  // Load from DB on mount
   useEffect(() => {
-    const savedPersonal = localStorage.getItem("profile_personal")
-    if (savedPersonal) setPersonalInfo(JSON.parse(savedPersonal))
-    
-    const savedContact = localStorage.getItem("profile_contact")
-    if (savedContact) setContactInfo(JSON.parse(savedContact))
+    const loadData = async () => {
+      try {
+        const data = await getProfile()
+        if (data.profile) {
+          setPersonalInfo({
+            prefix: data.profile.prefix || "นาย",
+            firstName: data.profile.firstName || "",
+            lastName: data.profile.lastName || "",
+            jobTitle: data.profile.jobTitle || "",
+            organization: data.profile.organization || "",
+            bio: data.profile.bio || "",
+            avatarUrl: data.profile.avatarUrl || "",
+            keywords: data.profile.keywords || ""
+          })
+          setContactInfo({
+            email: data.profile.email || "",
+            phone: data.profile.phone || "",
+            location: data.profile.location || ""
+          })
+        }
+        if (data.publications) {
+          setPublications(data.publications)
+        }
+      } catch (error) {
+        console.error("Failed to load profile", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadData()
   }, [])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true)
-    setTimeout(() => {
-      localStorage.setItem("profile_personal", JSON.stringify(personalInfo))
-      localStorage.setItem("profile_contact", JSON.stringify(contactInfo))
-      setIsSaving(false)
+    try {
+      await saveProfile({
+        ...personalInfo,
+        ...contactInfo
+      })
       setShowSaveSuccess(true)
       setTimeout(() => setShowSaveSuccess(false), 3000)
-    }, 800)
+    } catch (error) {
+      console.error("Save failed", error)
+      alert("ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleExport = () => {
@@ -202,6 +238,7 @@ export default function ProfilePage() {
             { id: "personal", label: "ข้อมูลส่วนตัว", icon: User },
             { id: "education", label: "ประวัติการศึกษา", icon: GraduationCap },
             { id: "experience", label: "ประสบการณ์ทำงาน", icon: Briefcase },
+            { id: "publications", label: "ผลงานวิชาการ", icon: BookOpen },
             { id: "social", label: "ช่องทางติดต่อ", icon: LinkIcon },
           ].map((tab) => (
             <button
@@ -381,6 +418,66 @@ export default function ProfilePage() {
                   <h3 className="font-bold text-lg text-slate-900 dark:text-white">อาจารย์ประจำหลักสูตร</h3>
                   <p className="text-slate-600 dark:text-slate-300 mt-1">คณะศึกษาศาสตร์ มหาวิทยาลัยศรีนครินทรวิโรฒ</p>
                   <p className="text-sm text-slate-500 mt-2">2565 - ปัจจุบัน</p>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "publications" && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white">ผลงานวิชาการ</h2>
+                  <button className="flex items-center gap-1 text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors">
+                    <Plus size={16} /> เพิ่ม
+                  </button>
+                </div>
+                
+                {/* Toolbar */}
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+                  <div className="relative w-full md:w-96">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                    <input 
+                      type="text" 
+                      placeholder="ค้นหาชื่อผลงาน, ปี..." 
+                      className="w-full pl-10 pr-4 py-2.5 bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-primary/50 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                  <button className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 px-4 py-2 rounded-xl transition-colors border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                    <Filter size={18} />
+                    <span>ตัวกรอง (Filter)</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {publications.map((pub: any) => (
+                    <div key={pub.id} className="group bg-white/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 hover:shadow-md transition-all relative overflow-hidden">
+                      <div className="absolute top-0 left-0 w-1.5 h-full bg-primary rounded-l-2xl"></div>
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="bg-primary/10 text-primary text-xs font-bold px-2.5 py-1 rounded-md">
+                              {pub.type || "JOURNAL"}
+                            </span>
+                            <span className="text-sm font-semibold text-slate-500">ปี {pub.year}</span>
+                          </div>
+                          <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">
+                            {pub.title}
+                          </h3>
+                        </div>
+                        <div className="flex gap-2">
+                          <button className="text-slate-400 hover:text-primary p-2 transition-colors">แก้ไข</button>
+                          <button className="text-slate-400 hover:text-red-500 p-2 transition-colors">ลบ</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {publications.length === 0 && (
+                    <div className="text-center py-12 border border-dashed border-slate-300 dark:border-slate-700 rounded-2xl">
+                      <FileText size={48} className="mx-auto text-slate-300 mb-4" />
+                      <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">ยังไม่มีข้อมูลผลงาน</h3>
+                      <p className="text-slate-500 mt-2">เริ่มต้นเพิ่มผลงานวิชาการของคุณเพื่อให้คนในเครือข่ายค้นพบ</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

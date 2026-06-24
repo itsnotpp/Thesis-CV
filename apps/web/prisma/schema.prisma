@@ -19,6 +19,11 @@ model User {
 
   profile       Profile?
   settings      Settings?
+  connectionsSent     Connection[]  @relation("ConnectionsSent")
+  connectionsReceived Connection[]  @relation("ConnectionsReceived")
+  publications        Publication[] @relation("PublicationAuthors")
+  education           Education[]
+  experience          Experience[]
 }
 
 model Profile {
@@ -60,3 +65,60 @@ model Settings {
 
   updatedAt       DateTime @updatedAt
 }
+
+model Connection {
+  id          String   @id @default(uuid())
+  userId      String
+  connectedId String
+  status      String   @default("PENDING") // PENDING, ACCEPTED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation("ConnectionsSent", fields: [userId], references: [id])
+  connected   User     @relation("ConnectionsReceived", fields: [connectedId], references: [id])
+
+  @@unique([userId, connectedId])
+}
+
+model Publication {
+  id          String   @id @default(uuid())
+  title       String
+  type        String?  // Research, Article, etc.
+  year        Int?
+  url         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authors     User[]   @relation("PublicationAuthors")
+}
+
+model Education {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  degree      String
+  institution String
+  year        Int?
+  details     String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Experience {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  title       String
+  company     String
+  startDate   String?
+  endDate     String?
+  current     Boolean  @default(false)
+  description String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

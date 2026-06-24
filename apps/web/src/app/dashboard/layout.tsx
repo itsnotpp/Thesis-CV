@@ -24,7 +24,6 @@ export default function DashboardLayout({
   const navItems = [
     { name: "ภาพรวม (Dashboard)", href: "/dashboard", icon: LayoutDashboard },
     { name: "จัดการโปรไฟล์", href: "/dashboard/profile", icon: UserCircle },
-    { name: "ผลงานวิชาการ", href: "/dashboard/portfolio", icon: BookOpen },
     { name: "เครือข่ายวิชาชีพ", href: "/dashboard/network", icon: Users },
     { name: "การตั้งค่า", href: "/dashboard/settings", icon: Settings },
   ]
