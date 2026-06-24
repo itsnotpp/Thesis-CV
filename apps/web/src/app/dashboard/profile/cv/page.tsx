@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
-import PrintButton from "./PrintButton"
+import CVActionButtons from "./CVActionButtons"
 
 const prisma = new PrismaClient()
 
@@ -64,11 +64,11 @@ export default async function CVPage({
         }
       `}} />
       
-      <div className="w-full max-w-[210mm] mb-6 flex justify-between items-center print:hidden px-4">
-        <Link href="/dashboard/profile" className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary transition-colors bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-sm">
+      <div className="w-full max-w-[210mm] mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 print:hidden px-4">
+        <Link href="/dashboard/profile" className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary transition-colors bg-white dark:bg-slate-800 px-4 py-2.5 rounded-lg shadow-sm">
           <ArrowLeft size={18} /> กลับไปหน้าโปรไฟล์
         </Link>
-        <PrintButton />
+        <CVActionButtons />
       </div>
 
       <div className="w-[210mm] min-h-[297mm] bg-white shadow-2xl print:shadow-none print:m-0 text-slate-900 font-sans p-[20mm] relative flex flex-col mx-auto overflow-hidden">

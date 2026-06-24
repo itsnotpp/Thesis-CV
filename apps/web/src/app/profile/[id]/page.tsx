@@ -7,6 +7,9 @@ import ConnectButton from "./ConnectButton"
 
 const prisma = new PrismaClient()
 
+import InviteButton from "./InviteButton"
+import { ShieldAlert, Mail, Phone } from "lucide-react"
+
 export default async function PublicProfilePage({ params }: { params: { id: string } }) {
   const session = await getServerSession()
   const currentUserEmail = session?.user?.email || "somchai.r@g.swu.ac.th"
@@ -23,7 +26,8 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
       profile: true,
       publications: true,
       connectionsReceived: true,
-      connectionsSent: true
+      connectionsSent: true,
+      settings: true
     }
   })
 
@@ -32,10 +36,7 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
   }
 
   const profile = targetUser.profile
-
-  // Calculate connections count
-  const connectionsCount = targetUser.connectionsReceived.filter(c => c.status === "ACCEPTED").length + 
-                           targetUser.connectionsSent.filter(c => c.status === "ACCEPTED").length
+  const settings = targetUser.settings
 
   // Check if current user is connected to target user
   let connectionStatus = "NONE"
@@ -58,6 +59,22 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
       }
     }
   }
+
+  // Privacy Check: Is public profile turned off?
+  if (!isSelf && settings && settings.publicProfile === false) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-6">
+        <ShieldAlert size={64} className="text-slate-400 mb-4" />
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">โปรไฟล์นี้เป็นส่วนตัว</h1>
+        <p className="text-slate-500 text-center max-w-md">เจ้าของบัญชีตั้งค่าความเป็นส่วนตัวไว้ ทำให้คุณไม่สามารถดูรายละเอียดโปรไฟล์นี้ได้</p>
+        <Link href="/dashboard/network" className="mt-8 bg-primary text-white px-6 py-2 rounded-xl">กลับสู่เครือข่าย</Link>
+      </div>
+    )
+  }
+
+  // Calculate connections count
+  const connectionsCount = targetUser.connectionsReceived.filter(c => c.status === "ACCEPTED").length + 
+                           targetUser.connectionsSent.filter(c => c.status === "ACCEPTED").length
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
@@ -106,10 +123,18 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
             
             <div className="flex gap-3">
               {!isSelf && (
-                <ConnectButton 
-                  targetId={targetUser.id} 
-                  initialStatus={connectionStatus} 
-                />
+                <>
+                  <ConnectButton 
+                    targetId={targetUser.id} 
+                    initialStatus={connectionStatus} 
+                  />
+                  {currentUser && (
+                    <InviteButton 
+                      targetId={targetUser.id}
+                      currentUserId={currentUser.id}
+                    />
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -139,6 +164,26 @@ export default async function PublicProfilePage({ params }: { params: { id: stri
                 )}
               </div>
             </div>
+
+            {(!settings?.hideContactInfo || isSelf) && (profile.email || profile.phone) && (
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">ข้อมูลติดต่อ</h3>
+                <div className="space-y-3">
+                  {profile.email && (
+                    <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+                      <Mail size={18} className="text-slate-400" />
+                      <span className="text-sm">{profile.email}</span>
+                    </div>
+                  )}
+                  {profile.phone && (
+                    <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
+                      <Phone size={18} className="text-slate-400" />
+                      <span className="text-sm">{profile.phone}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Main Content (Publications) */}

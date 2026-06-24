@@ -24,6 +24,9 @@ model User {
   publications        Publication[] @relation("PublicationAuthors")
   education           Education[]
   experience          Experience[]
+  
+  invitesSent         CollaborationInvite[] @relation("InvitesSent")
+  invitesReceived     CollaborationInvite[] @relation("InvitesReceived")
 }
 
 model Profile {
@@ -122,3 +125,16 @@ model Experience {
   updatedAt   DateTime @updatedAt
 }
 
+model CollaborationInvite {
+  id          String   @id @default(uuid())
+  senderId    String
+  receiverId  String
+  type        String   @default("EVALUATE") // EVALUATE, RESEARCH, OTHER
+  message     String?
+  status      String   @default("PENDING") // PENDING, ACCEPTED, DECLINED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sender      User     @relation("InvitesSent", fields: [senderId], references: [id])
+  receiver    User     @relation("InvitesReceived", fields: [receiverId], references: [id])
+}
