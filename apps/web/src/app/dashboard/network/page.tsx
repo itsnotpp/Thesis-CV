@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Building, GraduationCap, ChevronDown, CheckCircle2, Sparkles, Loader2, BrainCircuit, UserPlus, BookPlus, UserCheck } from "lucide-react"
+import { Search, Building, GraduationCap, ChevronDown, CheckCircle2, Sparkles, Loader2, BrainCircuit, UserPlus, BookPlus, UserCheck, X } from "lucide-react"
 import { getNetworkData, connectUser, addJointPublication } from "@/app/actions/network"
 
 export default function NetworkPage() {
