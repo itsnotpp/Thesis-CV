@@ -42,3 +42,17 @@ export async function getReceivedInvites(userId: string) {
     return { success: false, error: "Failed to fetch invites" }
   }
 }
+
+export async function respondToInvite(inviteId: string, status: "ACCEPTED" | "DECLINED") {
+  try {
+    const updated = await prisma.collaborationInvite.update({
+      where: { id: inviteId },
+      data: { status }
+    })
+    revalidatePath("/dashboard")
+    return { success: true, invite: updated }
+  } catch (error) {
+    console.error("Error responding to invite:", error)
+    return { success: false, error: "Failed to respond to invite" }
+  }
+}

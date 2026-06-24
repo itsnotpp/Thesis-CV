@@ -108,3 +108,38 @@ export async function addJointPublication(targetUserId: string, title: string) {
   revalidatePath('/dashboard/network')
   revalidatePath('/dashboard/profile')
 }
+
+export async function getAcceptedConnections() {
+  const currentUser = await getOrCreateCurrentUser()
+  
+  try {
+    const connections = await prisma.connection.findMany({
+      where: {
+        OR: [
+          { userId: currentUser.id, status: "ACCEPTED" },
+          { connectedId: currentUser.id, status: "ACCEPTED" }
+        ]
+      },
+      include: {
+        user: { include: { profile: true } },
+        connected: { include: { profile: true } }
+      }
+    })
+
+    const mappedConnections = connections.map(conn => {
+      const isInitiator = conn.userId === currentUser.id
+      const otherUser = isInitiator ? conn.connected : conn.user
+      return {
+        id: otherUser.id,
+        profile: otherUser.profile
+      }
+    })
+
+    const validConnections = mappedConnections.filter(c => c.profile)
+
+    return { success: true, connections: validConnections }
+  } catch (error) {
+    console.error("Failed to fetch connections", error)
+    return { success: false, connections: [] }
+  }
+}

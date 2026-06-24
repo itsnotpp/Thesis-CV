@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { Save, Shield, Bell, Palette, Key, Trash2, Globe, Loader2, CheckCircle2 } from "lucide-react"
 
+import { getSettings, updateSettings } from "@/app/actions/settings"
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("account")
   
@@ -16,15 +18,27 @@ export default function SettingsPage() {
     aiMatchAlerts: true
   })
 
+  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [showSaveSuccess, setShowSaveSuccess] = useState(false)
 
-  // Load from localStorage on mount
+  // Load from DB on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem("app_settings")
-    if (savedSettings) {
-      setSettings(JSON.parse(savedSettings))
+    const loadData = async () => {
+      const dbSettings = await getSettings()
+      if (dbSettings) {
+        setSettings({
+          publicProfile: dbSettings.publicProfile,
+          hideContactInfo: dbSettings.hideContactInfo,
+          darkMode: dbSettings.darkMode,
+          language: dbSettings.language,
+          emailAlerts: dbSettings.emailAlerts,
+          aiMatchAlerts: dbSettings.aiMatchAlerts
+        })
+      }
+      setIsLoading(false)
     }
+    loadData()
   }, [])
 
   // Check dark mode
@@ -36,14 +50,16 @@ export default function SettingsPage() {
     }
   }, [settings.darkMode])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true)
-    setTimeout(() => {
-      localStorage.setItem("app_settings", JSON.stringify(settings))
-      setIsSaving(false)
+    const res = await updateSettings(settings)
+    setIsSaving(false)
+    if (res.success) {
       setShowSaveSuccess(true)
       setTimeout(() => setShowSaveSuccess(false), 3000)
-    }, 800)
+    } else {
+      alert("เกิดข้อผิดพลาดในการบันทึกการตั้งค่า")
+    }
   }
 
   const toggleSetting = (key: keyof typeof settings) => {

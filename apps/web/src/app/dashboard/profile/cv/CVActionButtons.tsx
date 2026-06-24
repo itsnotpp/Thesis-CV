@@ -1,16 +1,30 @@
 "use client"
 
-import { useState } from "react"
-import { Printer, Share2, Mail, Users, CheckCircle2, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Printer, Share2, Mail, Users, CheckCircle2, X, Loader2 } from "lucide-react"
+import { getAcceptedConnections } from "@/app/actions/network"
 
 export default function CVActionButtons() {
   const [showNetworkModal, setShowNetworkModal] = useState(false)
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [emailInput, setEmailInput] = useState("")
   const [isSuccess, setIsSuccess] = useState(false)
+  
+  const [connections, setConnections] = useState<any[]>([])
+  const [isLoadingConnections, setIsLoadingConnections] = useState(false)
 
   const handlePrint = () => {
     window.print()
+  }
+
+  const openNetworkModal = async () => {
+    setShowNetworkModal(true)
+    setIsLoadingConnections(true)
+    const res = await getAcceptedConnections()
+    if (res.success) {
+      setConnections(res.connections)
+    }
+    setIsLoadingConnections(false)
   }
 
   const handleSendToNetwork = () => {
@@ -37,7 +51,7 @@ export default function CVActionButtons() {
     <>
       <div className="flex gap-3">
         <button 
-          onClick={() => setShowNetworkModal(true)}
+          onClick={openNetworkModal}
           className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2.5 rounded-lg font-semibold shadow-sm flex items-center gap-2 transition-colors"
         >
           <Users size={18} />
@@ -77,25 +91,29 @@ export default function CVActionButtons() {
             ) : (
               <div className="space-y-4">
                 <p className="text-slate-600 dark:text-slate-400 text-sm">เลือกลายชื่อจากคนที่คุณเชื่อมต่ออยู่ เพื่อส่งลิงก์ CV ของคุณให้พวกเขาพิจารณาร่วมงาน</p>
+                
                 <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-                  <label className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-100 dark:border-slate-800">
-                    <input type="checkbox" className="rounded text-primary focus:ring-primary w-5 h-5" />
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">ดร. วิทยา มุ่งมั่น</p>
-                      <p className="text-xs text-slate-500">ม.เกษตรศาสตร์</p>
-                    </div>
-                  </label>
-                  <label className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-100 dark:border-slate-800">
-                    <input type="checkbox" className="rounded text-primary focus:ring-primary w-5 h-5" />
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white text-sm">ผศ. สมศรี ดีใจ</p>
-                      <p className="text-xs text-slate-500">ม.เชียงใหม่</p>
-                    </div>
-                  </label>
+                  {isLoadingConnections ? (
+                    <div className="p-6 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+                  ) : connections.length === 0 ? (
+                    <div className="p-6 text-center text-slate-500 text-sm">คุณยังไม่มีการเชื่อมต่อกับใครเลย</div>
+                  ) : (
+                    connections.map((conn) => (
+                      <label key={conn.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-b border-slate-100 dark:border-slate-800">
+                        <input type="checkbox" className="rounded text-primary focus:ring-primary w-5 h-5" />
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-white text-sm">{conn.profile.prefix} {conn.profile.firstName} {conn.profile.lastName}</p>
+                          <p className="text-xs text-slate-500">{conn.profile.organization}</p>
+                        </div>
+                      </label>
+                    ))
+                  )}
                 </div>
+
                 <button 
                   onClick={handleSendToNetwork}
-                  className="w-full bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl font-bold shadow-md transition-colors"
+                  disabled={isLoadingConnections || connections.length === 0}
+                  className="w-full bg-primary disabled:opacity-50 hover:bg-primary/90 text-white px-6 py-2.5 rounded-xl font-bold shadow-md transition-colors"
                 >
                   ส่งลิงก์ CV
                 </button>
