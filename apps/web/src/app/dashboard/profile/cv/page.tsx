@@ -1,16 +1,43 @@
-"use client"
-
-import { useSession } from "next-auth/react"
-import { Printer, ArrowLeft } from "lucide-react"
+import { PrismaClient } from "@prisma/client"
+import { getServerSession } from "next-auth/next"
+import { redirect } from "next/navigation"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
-import { Suspense } from "react"
+import { ArrowLeft } from "lucide-react"
+import PrintButton from "./PrintButton"
 
-function CVContent() {
-  const { data: session } = useSession()
-  const searchParams = useSearchParams()
-  const sectionsQuery = searchParams.get("sections")
-  
+const prisma = new PrismaClient()
+
+export default async function CVPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
+  const session = await getServerSession()
+  if (!session?.user?.email) {
+    redirect("/login")
+  }
+
+  // Get user with all their related data
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: {
+      profile: true,
+      education: { orderBy: { year: "desc" } },
+      experience: { orderBy: { startDate: "desc" } },
+      publications: { orderBy: { year: "desc" }, include: { authors: { include: { profile: true } } } }
+    }
+  })
+
+  if (!user || !user.profile) {
+    return <div className="p-8 text-center">ไม่พบข้อมูลโปรไฟล์ กรุณาไปที่หน้า จัดการโปรไฟล์ เพื่อเพิ่มข้อมูลก่อนครับ</div>
+  }
+
+  const profile = user.profile
+  const education = user.education
+  const experience = user.experience
+  const publications = user.publications
+
+  const sectionsQuery = searchParams.sections as string
   const sections = sectionsQuery ? sectionsQuery.split(",") : ["personal", "education", "experience", "publications"]
   
   const showPersonal = sections.includes("personal")
@@ -18,13 +45,9 @@ function CVContent() {
   const showExperience = sections.includes("experience")
   const showPublications = sections.includes("publications")
 
-  const email = searchParams.has("email") ? searchParams.get("email") : (session?.user?.email || "somchai.r@g.swu.ac.th")
-  const phone = searchParams.has("phone") ? searchParams.get("phone") : "02-123-4567"
-  const location = searchParams.has("location") ? searchParams.get("location") : "กรุงเทพมหานคร, ประเทศไทย"
-
-  const handlePrint = () => {
-    window.print()
-  }
+  const email = (searchParams.email as string) || user.email
+  const phone = (searchParams.phone as string) || "-"
+  const location = (searchParams.location as string) || "-"
 
   return (
     <div className="min-h-screen bg-slate-200 dark:bg-slate-900 py-8 print:bg-transparent print:py-0 print:p-0 flex flex-col items-center print:block">
@@ -45,13 +68,7 @@ function CVContent() {
         <Link href="/dashboard/profile" className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary transition-colors bg-white dark:bg-slate-800 px-4 py-2 rounded-lg shadow-sm">
           <ArrowLeft size={18} /> กลับไปหน้าโปรไฟล์
         </Link>
-        <button 
-          onClick={handlePrint}
-          className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-lg font-semibold shadow-md flex items-center gap-2 transition-colors"
-        >
-          <Printer size={18} />
-          สั่งพิมพ์ / บันทึกเป็น PDF
-        </button>
+        <PrintButton />
       </div>
 
       <div className="w-[210mm] min-h-[297mm] bg-white shadow-2xl print:shadow-none print:m-0 text-slate-900 font-sans p-[20mm] relative flex flex-col mx-auto overflow-hidden">
@@ -64,93 +81,87 @@ function CVContent() {
         <div className="flex justify-between items-start border-b-2 border-slate-900 pb-6 mb-6">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight uppercase text-slate-900">
-              {session?.user?.name || "ดร. สมชาย เรียนดี"}
+              {profile.prefix} {profile.firstName} {profile.lastName}
             </h1>
-            <p className="text-lg text-slate-600 font-medium mt-2">อาจารย์ประจำ / นักวิจัย</p>
-            <p className="text-base text-slate-500 mt-1">มหาวิทยาลัยศรีนครินทรวิโรฒ</p>
+            <p className="text-lg text-slate-600 font-medium mt-2">{profile.jobTitle || "นักวิจัย"}</p>
+            <p className="text-base text-slate-500 mt-1">{profile.organization}</p>
           </div>
           <div className="text-right text-sm space-y-1 text-slate-600 mt-2">
             {email && <p>{email}</p>}
-            {phone && <p>{phone}</p>}
-            {location && <p>{location}</p>}
+            {phone && phone !== "-" && <p>{phone}</p>}
+            {location && location !== "-" && <p>{location}</p>}
           </div>
         </div>
 
-        {showPersonal && (
+        {showPersonal && profile.bio && (
           <div className="mb-6">
             <h2 className="text-lg font-bold text-slate-900 uppercase tracking-wider mb-2">สรุปประวัติ (Professional Summary)</h2>
             <p className="text-sm leading-relaxed text-slate-700 text-justify">
-              นักวิจัยและอาจารย์ผู้มีความเชี่ยวชาญด้านเทคโนโลยีการศึกษา (Educational Technology) และการนำปัญญาประดิษฐ์ (AI) มาประยุกต์ใช้ในการเรียนการสอน มีประสบการณ์สอนกว่า 5 ปี และมีผลงานวิจัยตีพิมพ์ในวารสารระดับนานาชาติ (Scopus Q1) มุ่งมั่นที่จะพัฒนารูปแบบการเรียนรู้ที่ยั่งยืนและตอบสนองต่อผู้เรียนในยุคดิจิทัล
+              {profile.bio}
             </p>
           </div>
         )}
 
         <div className="grid grid-cols-2 gap-8 mb-6">
           
-          {showExperience && (
+          {showExperience && experience.length > 0 && (
             <div>
               <h2 className="text-lg font-bold text-slate-900 uppercase tracking-wider mb-3 border-b border-slate-200 pb-2">ประสบการณ์ทำงาน</h2>
               <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-baseline mb-1">
-                    <h3 className="font-bold text-base text-slate-800">อาจารย์ประจำหลักสูตร</h3>
-                    <span className="text-xs font-semibold text-slate-500">2565 - ปัจจุบัน</span>
+                {experience.map(exp => (
+                  <div key={exp.id}>
+                    <div className="flex justify-between items-baseline mb-1">
+                      <h3 className="font-bold text-base text-slate-800">{exp.title}</h3>
+                      <span className="text-xs font-semibold text-slate-500">
+                        {exp.startDate ? new Date(exp.startDate).getFullYear() : ""} - {exp.current ? "ปัจจุบัน" : (exp.endDate ? new Date(exp.endDate).getFullYear() : "")}
+                      </span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-600 italic">{exp.company}</p>
+                    {exp.description && (
+                      <p className="text-sm text-slate-600 mt-1">{exp.description}</p>
+                    )}
                   </div>
-                  <p className="text-sm font-medium text-slate-600 italic">คณะศึกษาศาสตร์ มศว</p>
-                  <ul className="list-disc list-outside text-sm text-slate-600 mt-2 space-y-1 ml-4">
-                    <li>สอนรายวิชาเทคโนโลยีการศึกษาเบื้องต้น</li>
-                    <li>หัวหน้าโครงการวิจัยทุน วช.</li>
-                  </ul>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between items-baseline mb-1">
-                    <h3 className="font-bold text-base text-slate-800">นักวิจัยผู้ช่วย</h3>
-                    <span className="text-xs font-semibold text-slate-500">2562 - 2565</span>
-                  </div>
-                  <p className="text-sm font-medium text-slate-600 italic">ศูนย์วิจัยนวัตกรรมการเรียนรู้</p>
-                </div>
+                ))}
               </div>
             </div>
           )}
 
-          {showEducation && (
+          {showEducation && education.length > 0 && (
             <div>
               <h2 className="text-lg font-bold text-slate-900 uppercase tracking-wider mb-3 border-b border-slate-200 pb-2">ประวัติการศึกษา</h2>
               <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between items-baseline mb-1">
-                    <h3 className="font-bold text-base text-slate-800">ปรัชญาดุษฎีบัณฑิต</h3>
-                    <span className="text-xs font-semibold text-slate-500">2565</span>
+                {education.map(edu => (
+                  <div key={edu.id}>
+                    <div className="flex justify-between items-baseline mb-1">
+                      <h3 className="font-bold text-base text-slate-800">{edu.degree}</h3>
+                      <span className="text-xs font-semibold text-slate-500">{edu.year || "-"}</span>
+                    </div>
+                    {edu.details && <p className="text-sm font-medium text-slate-600">{edu.details}</p>}
+                    <p className="text-sm text-slate-500 mt-0.5 italic">{edu.institution}</p>
                   </div>
-                  <p className="text-sm font-medium text-slate-600">เทคโนโลยีการศึกษา</p>
-                  <p className="text-sm text-slate-500 mt-0.5 italic">มหาวิทยาลัยศรีนครินทรวิโรฒ</p>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between items-baseline mb-1">
-                    <h3 className="font-bold text-base text-slate-800">ศึกษาศาสตรมหาบัณฑิต</h3>
-                    <span className="text-xs font-semibold text-slate-500">2560</span>
-                  </div>
-                  <p className="text-sm font-medium text-slate-600">เทคโนโลยีสื่อสารการศึกษา</p>
-                  <p className="text-sm text-slate-500 mt-0.5 italic">จุฬาลงกรณ์มหาวิทยาลัย</p>
-                </div>
+                ))}
               </div>
             </div>
           )}
 
         </div>
 
-        {showPublications && (
+        {showPublications && publications.length > 0 && (
           <div className="mb-6">
             <h2 className="text-lg font-bold text-slate-900 uppercase tracking-wider mb-3 border-b border-slate-200 pb-2">ผลงานวิชาการ (Selected Publications)</h2>
             <ul className="list-decimal list-outside ml-5 text-sm text-slate-700 space-y-2">
-              <li>
-                <span className="font-bold">เรียนดี, ส.</span>, และคณะ. (2568). การพัฒนารูปแบบการเรียนรู้ด้วยปัญญาประดิษฐ์ในห้องเรียนออนไลน์. <span className="italic">Journal of Educational Technology</span>, 15(2), 45-60. (Scopus Q1)
-              </li>
-              <li>
-                <span className="font-bold">Riandee, S.</span> (2024). Impact of Micro-learning on Student Engagement. <span className="italic">International Conference on EdTech</span>, Bangkok, Thailand.
-              </li>
+              {publications.map((pub: any) => (
+                <li key={pub.id}>
+                  {pub.authors && pub.authors.length > 0 ? (
+                    <span className="font-bold">
+                      {pub.authors.map((u: any) => `${u.profile?.lastName || ""}, ${u.profile?.firstName?.charAt(0) || ""}.`).join(", ")}
+                    </span>
+                  ) : (
+                    <span className="font-bold">{profile.lastName}, {profile.firstName?.charAt(0)}.</span>
+                  )} 
+                  ({pub.year || "ไม่ระบุปี"}). {pub.title}.{pub.url && <a href={pub.url} className="text-primary ml-1">[{pub.url}]</a>}
+                </li>
+              ))}
             </ul>
           </div>
         )}
@@ -163,13 +174,5 @@ function CVContent() {
 
       </div>
     </div>
-  )
-}
-
-export default function CVPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading CV...</div>}>
-      <CVContent />
-    </Suspense>
   )
 }

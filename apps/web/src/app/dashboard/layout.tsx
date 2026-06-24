@@ -62,6 +62,16 @@ export default function DashboardLayout({
               </Link>
             )
           })}
+          
+          {/* Public Profile Link */}
+          {(session?.user as any)?.id && (
+            <Link href={`/profile/${(session?.user as any).id}`}>
+              <div className={`flex items-center ${isSidebarOpen ? 'px-4 justify-start' : 'px-0 justify-center'} py-3 mt-4 rounded-xl transition-all text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20`}>
+                <UserCircle size={isSidebarOpen ? 20 : 24} />
+                {isSidebarOpen && <span className="ml-3 font-medium">โปรไฟล์สาธารณะของฉัน</span>}
+              </div>
+            </Link>
+          )}
         </div>
 
         <div className="p-4 border-t border-slate-200 dark:border-slate-800">
